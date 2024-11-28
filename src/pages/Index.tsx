@@ -7,6 +7,10 @@ import { AboutSection } from "@/components/AboutSection";
 import { UploadNFT } from "@/components/UploadNFT";
 import { NFTDisplay } from "@/components/NFTDisplay";
 import { Navigation } from "@/components/Navigation";
+import { ethers } from "ethers";
+import MinterCastABI from "../contracts/MinterCast.json";
+
+const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS;
 
 const Index = () => {
   const [isOwner, setIsOwner] = useState(false);
@@ -15,9 +19,20 @@ const Index = () => {
 
   useEffect(() => {
     const checkOwner = async () => {
-      if (!account) return;
-      setIsOwner(account.toLowerCase() === import.meta.env.VITE_OWNER_ADDRESS.toLowerCase());
+      if (!account || !window.ethereum) return;
+      
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const network = await provider.getNetwork();
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, MinterCastABI.abi, provider);
+        const contractOwner = await contract.owner();
+        setIsOwner(account.toLowerCase() === contractOwner.toLowerCase());
+      } catch (error) {
+        console.error("Error checking owner:", error);
+        setIsOwner(false);
+      }
     };
+    
     checkOwner();
   }, [account]);
 
